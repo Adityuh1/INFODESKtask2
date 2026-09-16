@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 
+  Pristine stylesheet: all layout, background, and typography colors are 
+  controlled cleanly by Tailwind utility classes to prevent specificity clashes.
+*/
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  min-height: 100vh;
+}

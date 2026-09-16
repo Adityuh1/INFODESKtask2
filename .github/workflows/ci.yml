@@ -1,0 +1,37 @@
+# The name of our workflow as it will appear in the GitHub Actions dashboard
+name: Continuous Integration
+
+# "on" defines the triggers: when should this pipeline run?
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            
+            - name: setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: 20
+            
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run Backend Crawler & Adapter Tests
+              run: |
+                node tests/test-crawler.js
+                node tests/test-git-adapter.js
+
+            - name: Install Frontend Dependencies
+              working-directory: ./dashboard
+              run: npm ci
+            
+            - name: Build Frontend (React Compile Check)
+              working-directory: ./dashboard
+              run: npm run build

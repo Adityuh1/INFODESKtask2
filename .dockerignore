@@ -1,0 +1,31 @@
+# Node dependencies — Docker installs these fresh inside the container
+node_modules/
+dashboard/node_modules/
+
+# Environment secrets — NEVER bake .env into an image
+.env
+.env.*
+!.env.example
+
+# Git internals
+.git/
+.gitignore
+
+# Frontend build artifacts (we only serve the backend)
+dashboard/
+dist/
+build/
+out/
+
+# Logs and temp files
+*.log
+temp-audits/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# GitHub Actions config (not needed at runtime)
+.github/
