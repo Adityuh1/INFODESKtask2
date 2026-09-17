@@ -1,37 +1,47 @@
-# The name of our workflow as it will appear in the GitHub Actions dashboard
 name: Continuous Integration
 
-# "on" defines the triggers: when should this pipeline run?
+# Triggers when code is pushed to the main branch
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            
-            - name: setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                node-version: 20
-            
-            - name: Install dependencies
-              run: npm ci
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Existing Node Tests
+        run: |
+          npm ci
+          node tests/test-crawler.js
+          node tests/test-git-adapter.js
 
-            - name: Run Backend Crawler & Adapter Tests
-              run: |
-                node tests/test-crawler.js
-                node tests/test-git-adapter.js
-
-            - name: Install Frontend Dependencies
-              working-directory: ./dashboard
-              run: npm ci
-            
-            - name: Build Frontend (React Compile Check)
-              working-directory: ./dashboard
-              run: npm run build
+      - name: Build Docker Image
+        run: docker build -t tech-debt-auditor:test .
+      
+      - name: Run Docker Container (Background)
+        run: |
+          # Start the container in detached mode (-d)
+          docker run -d -p 3001:3001 --name api-container tech-debt-auditor:test
+          # Give the Node server a few seconds to boot up
+          sleep 5
+      
+      - name: Basic Validation / Smoke Test
+        run: |
+          # The --fail flag tells curl to throw an error if it doesn't get a 200 OK response
+          curl --fail http://localhost:3001/api/health
+      
+      - name: Report Build Status
+        if: always() # This ensures this step runs even if a previous step failed
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ BUILD AND TESTS PASSED SUCCESSFULLY!"
+          else
+            echo "BUILD OR TESTS FAILED!"
+            echo "--- Docker Logs ---"
+            docker logs api-container || true
+          fi
